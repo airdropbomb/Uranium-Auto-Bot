@@ -253,4 +253,58 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
     }
 };
 
-// ... (တခြား functions တွေ အတူတူပဲ၊ initLogs, main, etc.)
+const initLogs = () => {
+    const logFilePath = path.join(__dirname, config.logFile);
+    if (!fs.existsSync(logFilePath)) {
+        fs.writeFileSync(logFilePath, `=== Uraniumio Mining Bot Logs ===\nStarted at: ${new Date().toISOString()}\n\n`);
+        log('Log file initialized', {}, null, 'system');
+    }
+};
+
+const main = async () => {
+    try {
+        initLogs();
+
+        if (walletRefs.length === 0) {
+            log('Configure wallets in .env', {}, null, 'error');
+            process.exit(1);
+        }
+
+        if (proxies.length === 0) {
+            log('No proxies configured in proxies.txt. Running without proxies.', {}, null, 'warning');
+        }
+
+        // UI ကို အရင်သေချာဖန်တီးမယ်
+        const uiElements = await initUI();
+        statusBox = uiElements.statusBox;
+        logBox = uiElements.logBox;
+
+        if (!statusBox || !logBox) {
+            throw new Error('Failed to initialize statusBox or logBox');
+        }
+
+        logBox.focus();
+
+        const boxWidth = 49;
+
+        log('╔' + '═'.repeat(boxWidth - 2) + '╗', {}, null, 'system');
+        log(`║${centerText('URANIUM.IO MINING BOT INITIALIZED', boxWidth - 2)}║`, {}, null, 'system');
+        log(`║${centerText(`Loaded ${walletRefs.length} wallets`, boxWidth - 2)}║`, {}, null, 'system');
+        log(`║${centerText(`Proxies: ${proxies.length} available`, boxWidth - 2)}║`, {}, null, 'system');
+        log('╚' + '═'.repeat(boxWidth - 2) + '╝', {}, null, 'system');
+
+        walletRefs.forEach(walletObj => {
+            log(`Loaded: ${walletObj.label} (${walletObj.wallet})`, {}, null, 'info');
+        });
+
+        // UI ဖန်တီးပြီးမှ updateStatus ခေါ်မယ်
+        updateStatus('Starting mining operations', 'white');
+        addShards(0);
+
+    } catch (error) {
+        log(`Critical error: ${error.message}`, {}, null, 'error');
+        process.exit(1);
+    }
+};
+
+main();
