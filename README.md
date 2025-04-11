@@ -9,7 +9,6 @@ An automated bot for mining Uranium tokens from the [GetUranium](https://www.get
 - Referral system integration
 - Random mining amounts
 - Proxy support for IP rotation
-- Beautiful CLI interface with real-time logging
 - Detailed mining activity logs
 
 ## Register
@@ -75,8 +74,6 @@ node index.js
 | Option | Description | Default |
 |--------|-------------|---------|
 | BASE_URL | URL of the Uranium platform | https://www.geturanium.io/ |
-| MIN_AMOUNT | Minimum amount of shards to mine | 30 |
-| MAX_AMOUNT | Maximum amount of shards to mine | 150 |
 | MINING_INTERVAL | Time between mining operations (ms) | 10000 |
 | LOG_FILE | Name of the log file | mining-logs.txt |
 | WALLET_# | Wallet addresses to use | - |
