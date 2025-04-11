@@ -1,9 +1,13 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const fs = require('fs');
 const path = require('path');
 const blessed = require('blessed');
 const figlet = require('figlet');
 require('dotenv').config();
+
+// Stealth plugin ထည့်တယ်
+puppeteer.use(StealthPlugin());
 
 const screen = blessed.screen({
     smartCSR: true,
@@ -14,7 +18,7 @@ const walletRefs = [];
 for (let i = 1; process.env[`WALLET_${i}`]; i++) {
     walletRefs.push({
         wallet: process.env[`WALLET_${i}`],
-        refAddress: process.env[`REF_${i}`] || process.env.DEFAULT_REF_ADDRESS,
+        refAddress: process.env[`REF_${i}`] || process.env.DEFAULT_REF_ADDRESS || 'default-ref', // Default refAddress
         label: `Wallet${i}`
     });
 }
@@ -34,7 +38,7 @@ const config = {
     baseUrl: process.env.BASE_URL || 'https://www.geturanium.io/',
     [_0x5a7e[0]]: _0x31f2(_0x5a7e[1], 30, 1),
     [_0x5a7e[2]]: _0x31f2(_0x5a7e[3], 150, 1),
-    miningInterval: parseInt(process.env.MINING_INTERVAL) || 30000, // 30 စက္ကန့် ပိုကြာအောင်ထားတယ်
+    miningInterval: parseInt(process.env.MINING_INTERVAL) || 60000, // 60 စက္ကန့်
     logFile: process.env.LOG_FILE || 'mining-logs.txt'
 };
 
@@ -223,22 +227,28 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
         updateStatus(`Mining in progress... Adding ${amount} shards`, 'yellow', walletObj);
         log(`Mining started - Adding ${amount} shards`, walletObj, proxy, 'system');
 
-        // Puppeteer နဲ့ browser ဖွင့်တယ်
+        // Browser ဖွင့်တယ်
         const browser = await puppeteer.launch({
-            headless: true,
+            headless: 'new',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 ...proxyArgs,
                 '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process'
-            ]
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--window-size=1920,1080' // Real browser လိုဖြစ်အောင်
+            ],
+            defaultViewport: { width: 1920, height: 1080 } // Real viewport size
         });
 
         const page = await browser.newPage();
 
-        // User-Agent ကို random ထားတယ်
+        // Real browser လိုဖြစ်အောင် settings ထည့်တယ်
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
+        await page.setExtraHTTPHeaders({
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': `${config.baseUrl}?ref=${walletObj.refAddress}`
+        });
 
         // Proxy authentication လိုအပ်ရင်
         if (proxy && proxy.includes('@')) {
@@ -247,15 +257,10 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
             await page.authenticate({ username, password });
         }
 
-        // Referrer ထည့်တယ်
-        await page.setExtraHTTPHeaders({
-            'Referer': `${config.baseUrl}?ref=${walletObj.refAddress}`
-        });
-
         log(`Navigating to ${config.baseUrl}?ref=${walletObj.refAddress}`, walletObj, proxy, 'system');
         await page.goto(`${config.baseUrl}?ref=${walletObj.refAddress}`, { waitUntil: 'networkidle2', timeout: 60000 });
 
-        // Vercel Security Checkpoint စစ်ဆေးမှုကို စောင့်တယ်
+        // Vercel Security Checkpoint စစ်ဆေးမှု
         const checkpointSelector = 'p#footer-text';
         try {
             await page.waitForSelector(checkpointSelector, { timeout: 10000 });
@@ -269,7 +274,7 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
             }
         }
 
-        // Mining request ကို JavaScript နဲ့ ပို့တယ်
+        // Mining request
         const miningBody = JSON.stringify([{
             walletAddress: walletObj.wallet,
             operation: "ADD_SHARDS",
@@ -299,7 +304,7 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
 
         log(`Mining success Status: ${response.status}`, walletObj, proxy, 'success');
 
-        // Verification လုပ်တယ်
+        // Verification
         log(`Starting verification`, walletObj, proxy, 'system');
         for (let i = 0; i < 3; i++) {
             try {
@@ -366,6 +371,10 @@ const main = async () => {
         if (walletRefs.length === 0) {
             log('Configure wallets in .env', {}, null, 'error');
             process.exit(1);
+        }
+
+        if (proxies.length === 0) {
+            log('No proxies configured in proxies.txt. Running without proxies.', {}, null, 'warning');
         }
 
         const uiElements = await initUI();
