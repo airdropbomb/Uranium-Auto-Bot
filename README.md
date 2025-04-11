@@ -13,7 +13,7 @@ An automated bot for mining Uranium tokens from the [GetUranium](https://www.get
 
 ## Register
 
-- Link : https://www.geturanium.io?ref=0x2be9dcfabe616c75813c28855fc2b0cbf85ca77e
+- Link : [https://www.geturanium.io/?ref=0x5fcd1722a3364f4a17c549f85266da235a79f28c]
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ An automated bot for mining Uranium tokens from the [GetUranium](https://www.get
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/airdropinsiders/Uranium-Auto-Bot.git
+git clone https://github.com/airdropbomb/Uranium-Auto-Bot.git
 ```
 
 2. Navigate to the project directory:
@@ -101,7 +101,7 @@ This tool is for educational purposes only. Use at your own risk. The developers
 
 ## Join Our Community
 
-Join us on Telegram: [AirdropInsiderID](https://t.me/AirdropInsiderID)
+Join us on Telegram: [Airdropbombnode](https://t.me/airdropbombnode)
 
 ## License
 
