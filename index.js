@@ -118,48 +118,53 @@ const createNoteBox = (bannerHeight) => {
 };
 
 const initUI = async () => {
-    const { banner, bannerHeight } = await createBanner();
-    const noteBox = createNoteBox(bannerHeight);
+    try {
+        const { banner, bannerHeight } = await createBanner();
+        const noteBox = createNoteBox(bannerHeight);
 
-    const statusBox = blessed.box({
-        top: bannerHeight + 4,
-        left: 0,
-        width: '100%',
-        height: 5,
-        content: '{white-fg}Bot Status:{/white-fg} {green-fg}Initializing...{/green-fg}',
-        tags: true,
-        border: { type: 'line' },
-        style: {
-            fg: 'white',
-            border: { fg: 'yellow' }
-        }
-    });
+        const statusBox = blessed.box({
+            top: bannerHeight + 4,
+            left: 0,
+            width: '100%',
+            height: 5,
+            content: '{white-fg}Bot Status:{/white-fg} {green-fg}Initializing...{/green-fg}',
+            tags: true,
+            border: { type: 'line' },
+            style: {
+                fg: 'white',
+                border: { fg: 'yellow' }
+            }
+        });
 
-    const logBox = blessed.log({
-        top: bannerHeight + 9,
-        left: 0,
-        width: '100%',
-        height: `100%-${bannerHeight + 9}`,
-        scrollable: true,
-        alwaysScroll: true,
-        scrollbar: {
-            ch: '┃',
-            style: { bg: 'green' }
-        },
-        tags: true,
-        border: { type: 'line' },
-        style: {
-            fg: 'white',
-            border: { fg: 'yellow' }
-        }
-    });
+        const logBox = blessed.log({
+            top: bannerHeight + 9,
+            left: 0,
+            width: '100%',
+            height: `100%-${bannerHeight + 9}`,
+            scrollable: true,
+            alwaysScroll: true,
+            scrollbar: {
+                ch: '┃',
+                style: { bg: 'green' }
+            },
+            tags: true,
+            border: { type: 'line' },
+            style: {
+                fg: 'white',
+                border: { fg: 'yellow' }
+            }
+        });
 
-    screen.append(banner);
-    screen.append(noteBox);
-    screen.append(statusBox);
-    screen.append(logBox);
+        screen.append(banner);
+        screen.append(noteBox);
+        screen.append(statusBox);
+        screen.append(logBox);
 
-    return { statusBox, logBox };
+        return { statusBox, logBox };
+    } catch (error) {
+        console.error('Error in initUI:', error);
+        throw new Error('Failed to initialize UI');
+    }
 };
 
 screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
@@ -195,20 +200,45 @@ const log = (message, walletObj = {}, proxyAddress = null, type = 'info') => {
         default: formattedMessage = `{white-fg}[${timestamp}] ${label}ℹ ${message} ${proxyText}{/white-fg}`;
     }
 
-    logBox.log(formattedMessage);
-    screen.render();
+    if (logBox) {
+        logBox.log(formattedMessage);
+        screen.render();
+    }
     fs.appendFileSync(path.join(__dirname, config.logFile), `[${timestamp}] ${walletObj.label || ''} ${message} ${proxyText}\n`);
 };
 
-let statusBox, logBox;
+let statusBox = null;
+let logBox = null;
 
 const updateStatus = (status, color = 'green', walletObj = {}) => {
+    if (!statusBox) {
+        log('StatusBox not initialized yet', walletObj, null, 'error');
+        return;
+    }
     statusBox.setContent(
         `{white-fg}Bot Status:{/white-fg} {${color}-fg}${status}{/${color}-fg}\n` +
         `{white-fg}Current Wallet:{/white-fg} {yellow-fg}${walletObj.label || 'N/A'} (${walletObj.wallet?.substring(0, 6) || 'N/A'}...){/yellow-fg}\n` +
         `{white-fg}Ref Address:{/white-fg} {yellow-fg}${walletObj.refAddress?.substring(0, 6) || 'N/A'}...{/yellow-fg}`
     );
     screen.render();
+};
+
+const simulateHumanBehavior = async (page) => {
+    try {
+        // Random mouse movement
+        await page.mouse.move(Math.random() * 500, Math.random() * 500);
+        await page.mouse.move(Math.random() * 500, Math.random() * 500);
+
+        // Random scroll
+        await page.evaluate(() => {
+            window.scrollBy(0, Math.random() * 200);
+        });
+
+        // Random delay
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+    } catch (error) {
+        log(`Failed to simulate human behavior: ${error.message}`, {}, null, 'warning');
+    }
 };
 
 const addShards = async (walletIndex = 0, retryCount = 0) => {
@@ -236,21 +266,21 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
                 ...proxyArgs,
                 '--disable-web-security',
                 '--disable-features=IsolateOrigins,site-per-process',
-                '--window-size=1920,1080' // Real browser လိုဖြစ်အောင်
+                '--window-size=1920,1080'
             ],
-            defaultViewport: { width: 1920, height: 1080 } // Real viewport size
+            defaultViewport: { width: 1920, height: 1080 }
         });
 
         const page = await browser.newPage();
 
-        // Real browser လိုဖြစ်အောင် settings ထည့်တယ်
+        // Real browser settings
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
         await page.setExtraHTTPHeaders({
             'Accept-Language': 'en-US,en;q=0.9',
             'Referer': `${config.baseUrl}?ref=${walletObj.refAddress}`
         });
 
-        // Proxy authentication လိုအပ်ရင်
+        // Proxy authentication
         if (proxy && proxy.includes('@')) {
             const [auth, host] = proxy.split('@');
             const [username, password] = auth.split(':');
@@ -259,6 +289,9 @@ const addShards = async (walletIndex = 0, retryCount = 0) => {
 
         log(`Navigating to ${config.baseUrl}?ref=${walletObj.refAddress}`, walletObj, proxy, 'system');
         await page.goto(`${config.baseUrl}?ref=${walletObj.refAddress}`, { waitUntil: 'networkidle2', timeout: 60000 });
+
+        // Simulate human behavior
+        await simulateHumanBehavior(page);
 
         // Vercel Security Checkpoint စစ်ဆေးမှု
         const checkpointSelector = 'p#footer-text';
@@ -377,9 +410,15 @@ const main = async () => {
             log('No proxies configured in proxies.txt. Running without proxies.', {}, null, 'warning');
         }
 
+        // UI ကို အရင်သေချာဖန်တီးမယ်
         const uiElements = await initUI();
         statusBox = uiElements.statusBox;
         logBox = uiElements.logBox;
+
+        if (!statusBox || !logBox) {
+            throw new Error('Failed to initialize statusBox or logBox');
+        }
+
         logBox.focus();
 
         const boxWidth = 49;
@@ -394,15 +433,14 @@ const main = async () => {
             log(`Loaded: ${walletObj.label} (${walletObj.wallet})`, {}, null, 'info');
         });
 
+        // UI ဖန်တီးပြီးမှ updateStatus ခေါ်မယ်
         updateStatus('Starting mining operations', 'white');
         addShards(0);
 
     } catch (error) {
-        updateStatus('Critical Error', 'red');
         log(`Critical error: ${error.message}`, {}, null, 'error');
         process.exit(1);
     }
 };
 
 main();
-screen.render();
