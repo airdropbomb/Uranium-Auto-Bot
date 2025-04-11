@@ -1,0 +1,35 @@
+{
+    "name": "uranium-auto-bot",
+    "version": "1.0.0",
+    "description": "An automated bot for mining Uranium tokens from the GetUranium platform",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/airdropinsiders/Uranium-Auto-Bot.git"
+    },
+    "keywords": [
+      "uranium",
+      "crypto",
+      "mining",
+      "bot",
+      "airdrop",
+      "automation"
+    ],
+    "author": "Airdrop Insiders",
+    "license": "MIT",
+    "bugs": {
+      "url": "https://github.com/airdropinsiders/Uranium-Auto-Bot/issues"
+    },
+    "homepage": "https://github.com/airdropinsiders/Uranium-Auto-Bot#readme",
+    "dependencies": {
+      "axios": "^1.6.0",
+      "blessed": "^0.1.81",
+      "dotenv": "^16.0.3",
+      "figlet": "^1.6.0",
+      "https-proxy-agent": "^7.0.0"
+    }
+  }
