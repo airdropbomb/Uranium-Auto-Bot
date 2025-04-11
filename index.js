@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const screen = blessed.screen({
   smartCSR: true,
-  title: 'URANIUM AUTO MINING - AIRDROP INSIDERS'
+  title: 'URANIUM AUTO MINING - ADB NODE'
 });
 
 const walletRefs = [];
@@ -105,7 +105,7 @@ const createNoteBox = (bannerHeight) => {
     left: 'center',
     width: '100%',
     height: 1,
-    content: '{white-fg}Join Us: {cyan-fg}https://t.me/AirdropInsiderID{/cyan-fg}{/white-fg}',
+    content: '{white-fg}Join Us: {cyan-fg}https://t.me/airdropbombnode{/cyan-fg}{/white-fg}',
     align: 'center',
     tags: true,
     style: {
